@@ -23,10 +23,10 @@ const (
 )
 
 type Config struct {
-	Interval     time.Duration `json:"interval"` // 消息发送间隔时间
-	Title        string        `json:"title"`    // 通知的标题
-	RobotWebhook string        `json:"robot_webhook"`
-	RobotSecret  string        `json:"robot_secret"`
+	Interval     time.Duration `toml:"interval"` // 消息发送间隔时间
+	Title        string        `toml:"title"`    // 通知的标题
+	RobotWebhook string        `toml:"robot_webhook"`
+	RobotSecret  string        `toml:"robot_secret"`
 }
 
 type Message struct {
