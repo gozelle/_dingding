@@ -23,10 +23,9 @@ const (
 )
 
 type Config struct {
-	Interval time.Duration `toml:"interval"` // 消息发送间隔时间, 默认为 6 秒钟，避免钉钉 API 限流，消息丢失
-	Title    string        `toml:"title"`    // 通知的标题
-	Webhook  string        `toml:"webhook"`
-	Secret   string        `toml:"secret"`
+	Title   string `toml:"title"` // 通知的标题
+	Webhook string `toml:"webhook"`
+	Secret  string `toml:"secret"`
 }
 
 type Message struct {
@@ -69,19 +68,17 @@ type ActionCard struct {
 }
 
 func NewRobot(config *Config) *Robot {
-	if config.Interval == 0 {
-		config.Interval = 6 * time.Second
-	}
 	robot := &Robot{
 		config: config,
-		bucket: _bucket.NewBucket(config.Interval),
+		bucket: _bucket.NewBucket(6 * time.Second),
 	}
 	return robot
 }
 
 type Robot struct {
-	bucket         *_bucket.Bucket
 	config         *Config
+	interval       time.Duration
+	bucket         *_bucket.Bucket
 	titleFormatter func(messages []interface{}) string
 	at             *At
 }
