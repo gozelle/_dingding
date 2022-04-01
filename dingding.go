@@ -23,10 +23,10 @@ const (
 )
 
 type Config struct {
-	Duration   time.Duration `json:"duration"`
-	Title      string        `json:"title"`
-	Webhook    string        `json:"webhook"`
-	SignSecret string        `json:"sign_secret"`
+	Interval     time.Duration `json:"interval"` // 消息发送间隔时间
+	Title        string        `json:"title"`    // 通知的标题
+	RobotWebhook string        `json:"robot_webhook"`
+	RobotSecret  string        `json:"robot_secret"`
 }
 
 type Message struct {
@@ -69,12 +69,12 @@ type ActionCard struct {
 }
 
 func NewRobot(config *Config) *Robot {
-	if config.Duration == 0 {
-		config.Duration = 1 * time.Second
+	if config.Interval == 0 {
+		config.Interval = 1 * time.Second
 	}
 	robot := &Robot{
 		config: config,
-		bucket: _bucket.NewBucket(config.Duration),
+		bucket: _bucket.NewBucket(config.Interval),
 	}
 	return robot
 }
@@ -126,7 +126,7 @@ func (p *Robot) SetTitleFormatter(format func(messages []interface{}) string) {
 
 func (p *Robot) PrepareMarkdown(messages []interface{}) *Markdown {
 	msg := new(Markdown)
-	
+
 	for _, v := range messages {
 		switch v.(type) {
 		case *Markdown:
@@ -162,14 +162,14 @@ func (p *Robot) PrepareMarkdown(messages []interface{}) *Markdown {
 			}
 		}
 	}
-	
+
 	return msg
 }
 
 func (p *Robot) sign() (timestamp int64, sign string) {
 	timestamp = time.Now().UnixNano() / 1e6
-	str := fmt.Sprintf("%d\n%s", timestamp, p.config.SignSecret)
-	h := hmac.New(sha256.New, []byte(p.config.SignSecret))
+	str := fmt.Sprintf("%d\n%s", timestamp, p.config.RobotSecret)
+	h := hmac.New(sha256.New, []byte(p.config.RobotSecret))
 	h.Write([]byte(str))
 	sign = base64.StdEncoding.EncodeToString(h.Sum(nil))
 	return
@@ -177,8 +177,8 @@ func (p *Robot) sign() (timestamp int64, sign string) {
 
 func (p *Robot) Request(title string, msg *Markdown) (err error) {
 	timestamp, sign := p.sign()
-	
-	address, err := url.Parse(p.config.Webhook)
+
+	address, err := url.Parse(p.config.RobotWebhook)
 	if err != nil {
 		log.Println(err)
 		return
