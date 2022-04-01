@@ -23,10 +23,10 @@ const (
 )
 
 type Config struct {
-	Interval     time.Duration `toml:"interval"` // 消息发送间隔时间
-	Title        string        `toml:"title"`    // 通知的标题
-	RobotWebhook string        `toml:"robot_webhook"`
-	RobotSecret  string        `toml:"robot_secret"`
+	Interval time.Duration `toml:"interval"` // 消息发送间隔时间, 默认为 6 秒钟，避免钉钉 API 限流，消息丢失
+	Title    string        `toml:"title"`    // 通知的标题
+	Webhook  string        `toml:"webhook"`
+	Secret   string        `toml:"secret"`
 }
 
 type Message struct {
@@ -70,7 +70,7 @@ type ActionCard struct {
 
 func NewRobot(config *Config) *Robot {
 	if config.Interval == 0 {
-		config.Interval = 1 * time.Second
+		config.Interval = 6 * time.Second
 	}
 	robot := &Robot{
 		config: config,
@@ -168,8 +168,8 @@ func (p *Robot) PrepareMarkdown(messages []interface{}) *Markdown {
 
 func (p *Robot) sign() (timestamp int64, sign string) {
 	timestamp = time.Now().UnixNano() / 1e6
-	str := fmt.Sprintf("%d\n%s", timestamp, p.config.RobotSecret)
-	h := hmac.New(sha256.New, []byte(p.config.RobotSecret))
+	str := fmt.Sprintf("%d\n%s", timestamp, p.config.Secret)
+	h := hmac.New(sha256.New, []byte(p.config.Secret))
 	h.Write([]byte(str))
 	sign = base64.StdEncoding.EncodeToString(h.Sum(nil))
 	return
@@ -178,7 +178,7 @@ func (p *Robot) sign() (timestamp int64, sign string) {
 func (p *Robot) Request(title string, msg *Markdown) (err error) {
 	timestamp, sign := p.sign()
 
-	address, err := url.Parse(p.config.RobotWebhook)
+	address, err := url.Parse(p.config.Webhook)
 	if err != nil {
 		log.Println(err)
 		return
